@@ -1,0 +1,6 @@
+{
+    "name": "Kartra builder",
+    "server": {
+        "port": 3000
+    }
+}
