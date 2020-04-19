@@ -6,7 +6,7 @@ const Schema = mongoose.Schema;
 const ObjectId = Schema.ObjectId;
 
 const layoutSchema = new Schema({
-    code: String,
+    html: String,
     description: String,
     style: String,
     thumbnail: {

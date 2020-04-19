@@ -277,13 +277,8 @@ const addButton = async (req, res) => {
     const error = __.validate(req.body, {
         projectId: Joi.string().required(),
         name: Joi.string().required(),
-        code: Joi.string().required(),
-        style: Joi.array().items(
-            Joi.object({
-                className: Joi.string().required(),
-                value: Joi.string().required(),
-            }), 
-        ),
+        html: Joi.string().required(),
+        style: Joi.string().required(),
         property: Joi.array().items(
             Joi.object({
                 className: Joi.string().required(),
@@ -297,7 +292,7 @@ const addButton = async (req, res) => {
     let button = {
         id: __.generateId(20),
         name: req.body.name,
-        code: req.body.code,
+        html: req.body.html,
         style: req.body.style,
         property: req.body.property,
     };
@@ -314,13 +309,8 @@ const updateButton = async (req, res) => {
         projectId: Joi.string().required(),
         buttonId: Joi.string().required(),
         name: Joi.string().required(),
-        code: Joi.string().required(),
-        style: Joi.array().items(
-            Joi.object({
-                className: Joi.string().required(),
-                value: Joi.string().required(),
-            }), 
-        ),
+        html: Joi.string().required(),
+        style: Joi.string().required(),
         property: Joi.array().items(
             Joi.object({
                 className: Joi.string().required(),
@@ -334,7 +324,7 @@ const updateButton = async (req, res) => {
     await Project.updateOne({ _id: req.body.projectId, 'buttons.id': req.body.buttonId }, {
         $set: {
             'buttons.$.name': req.body.name,
-            'buttons.$.code': req.body.code,
+            'buttons.$.html': req.body.html,
             'buttons.$.style': req.body.style,
             'buttons.$.property': req.body.property,
         }

@@ -14,7 +14,7 @@ const allLayout = async (req, res) => {
 
 const addLayout = async (req, res) => {
     const error = __.validate(req.body, {
-        code: Joi.string().required(),
+        html: Joi.string().required(),
         description: Joi.string().required(),
         style: Joi.string().required(),
         thumbnail: Joi.object({
@@ -26,7 +26,7 @@ const addLayout = async (req, res) => {
     if (error) return res.status(400).send(__.error.details[0].message);
 
     const layout = new Layout({
-        code: req.body.code,
+        html: req.body.html,
         description: req.body.description,
         style: req.body.style,
         thumbnail: req.body.thumbnail,
@@ -61,12 +61,16 @@ const updateLayoutThumbnail = async (req, res) => {
 const updateLayoutCode = async (req, res) => {
     const error = __.validate(req.body, {
         layoutId: Joi.string().required(),
-        code: Joi.string().required(),
+        html: Joi.string().required(),
+        style: Joi.string().required(),
     });
     if (error) return res.status(400).send(__.error(error.details[0].message));
 
     await Layout.updateOne({ _id: req.body.layoutId }, {
-        $set: { code: req.body.code }
+        $set: { 
+            html: req.body.html,
+            style: req.body.style,
+        }
     });
 
     res.status(200).send(__.success('Code updated'));
@@ -80,7 +84,7 @@ const allButton = async (req, res) =>{
 
 const addButton = async (req, res) => {
     const error = __.validate(req.body, {
-        code: Joi.string().required(),
+        html: Joi.string().required(),
         style: Joi.string().required(),
         property: Joi.array().items(
             Joi.object({
@@ -93,7 +97,7 @@ const addButton = async (req, res) => {
     if (error) return res.status(400).send(__.error(error.details[0].message));
 
     let button = new Button({
-        code: req.body.code,
+        html: req.body.html,
         style: req.body.style,
         property: req.body.property,
     });
@@ -105,14 +109,16 @@ const addButton = async (req, res) => {
 const updateButtonCode = async (req, res) => {
     const error = __.validate(req,body, {
         buttonId: Joi.string().required(),
-        code: Joi.string().required(),
+        html: Joi.string().required(),
+        style: Joi.string().required(),
     });
     if (error) return res.status(400).send(__.error(error.details[0].message));
 
     await Button.updateOne({ _id: req.body.buttonId }, {
         $set: {
-            code: req.body.code,
-        } 
+            html: req.body.html,
+            style: req.body.style,
+        }
     });
 
     res.status(200).send(__.success('Button code updated'));
