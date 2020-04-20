@@ -190,8 +190,8 @@ const updatePage = async (req, res) => {
     const error = __.validate(req.body, {
         projectId: Joi.string().required(),
         pageId: Joi.string().required(),
-        html: Joi.string().required(),
-        style: Joi.string().required(),
+        html: Joi.string().allow(''),
+        style: Joi.string().allow(''),
         sections: Joi.array().items(
             Joi.object({
                 id: Joi.string().required(),
@@ -203,11 +203,15 @@ const updatePage = async (req, res) => {
     });
     if (error) return res.status(400).send(__.error(error.details[0].message));
 
+    let sections = req.body.sections;
+    if (sections == null) 
+        sections = [];
+
     await Project.updateOne({ _id: req.body.projectId, 'pages.id': req.body.pageId }, {
         $set: {
             'pages.$.html': req.body.html,
             'pages.$.style': req.body.style,
-            'pages.$.sections': req.body.sections,
+            'pages.$.sections': sections,
         }
     });
 
