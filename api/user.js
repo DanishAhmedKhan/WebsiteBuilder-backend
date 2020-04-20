@@ -186,12 +186,20 @@ const getPage = async (req, res) => {
     res.status(200).send(__.success(page));
 };
 
-const updatePageCode = async (req, res) => {
+const updatePage = async (req, res) => {
     const error = __.validate(req.body, {
         projectId: Joi.string().required(),
         pageId: Joi.string().required(),
         html: Joi.string().required(),
         style: Joi.string().required(),
+        sections: Joi.array().items(
+            Joi.object({
+                id: Joi.string().required(),
+                htmlId: Joi.string().required(),
+                parentClass: Joi.string().required(),
+                url: Joi.string().required(),
+            })
+        )
     });
     if (error) return res.status(400).send(__.error(error.details[0].message));
 
@@ -199,10 +207,11 @@ const updatePageCode = async (req, res) => {
         $set: {
             'pages.$.html': req.body.html,
             'pages.$.style': req.body.style,
+            'pages.$.sections': req.body.sections,
         }
     });
 
-    res.status(200).send(__.success('Page code updated'));
+    res.status(200).send(__.success('Page updated'));
 };
 
 const renamePage = async (req, res) => {
@@ -469,6 +478,7 @@ router.post('/getAllProject', auth, getAllProjects);
 router.post('/renameProject', auth, renameProject);
 router.post('/addPage', auth, addPage);
 router.post('/getPage', auth, getPage);
+router.post('/updatePage', auth, updatePage);
 router.post('/renamePage', auth, renamePage);
 router.post('/deletePage', auth, deletePage);
 router.post('/saveSection', auth, saveSection);

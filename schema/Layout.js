@@ -9,6 +9,7 @@ const layoutSchema = new Schema({
     html: String,
     description: String,
     style: String,
+    parentClass: String,
     thumbnail: {
         url: String,
         width: Number,
