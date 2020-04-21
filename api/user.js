@@ -55,7 +55,7 @@ const login = async (req, res) => {
        .send(__.success(authToken));
 };
 
-const newProject = async (req, res) => {
+const addProject = async (req, res) => {
     const error = __.validate(req.body, {
         projectName: Joi.string().required(),
         domainName: Joi.string().required(),
@@ -148,6 +148,25 @@ const renameProject = async (req, res) => {
 
     res.status(200).send(__.success('Project renamed'));
 };
+
+const deleteProject = async (req, res) => {
+    const error = __.validate(req.body, {
+        projectId: Joi.string().required(),
+    });
+    if (error) return res.status(400).send(__.error(error.details[0].message));
+
+    const { user } = await Project.findOne({ _id: req.body.projectId }, 'user');
+
+    await Project.deleteOne({ _id: req.body.projectId });
+
+    await User.updateOne({ _id: user }, {
+        $pull: { 
+            projects: { id: req.body.projectId }
+        }
+    });
+
+    res.status(200).send(__.success('Project deleted'));
+}
 
 const addPage = async (req, res) => {
     const error = __.validate(req.body, {
@@ -314,6 +333,13 @@ const addButton = async (req, res) => {
         $push: { buttons: button }
     });
 
+    let { buttonStyle } = await Project.findOne({ _id: req.body.projectId }, 'buttonStyle');
+    buttonStyle += req.body.style;
+
+    await Project.updateOne({ _id: req.body.projectId }, {
+        $set: { buttonStyle }
+    });
+
     res.status(200).send(__.success(button));
 };
 
@@ -344,6 +370,23 @@ const updateButton = async (req, res) => {
     });
 
     res.status(200).send(__.success('Button updated'));
+};
+
+const getButtonStyle = async (req, res) => {
+    const error = __.validate(req.body, {
+        projectId: Joi.string().required(),
+    });
+    if (error) return res.status(400).send(__.error(error.details[0].message));
+
+    let { buttons } = await Project.findOne({ _id: req.body.projectId }, 'buttons');
+    console.log(buttons);
+
+    let buttonStyle = '.btndef { display: inline-block; cursor: pointer; background-color: #a1479f; padding: 10px 16px; }';
+    for (let i = 0; i < buttons.length; i++) {
+        buttonStyle += ' ' + buttons[i].style;
+    }
+
+    res.status(200).send(__.success(buttonStyle));
 };
 
 const deleteButton = async (req, res) => {
@@ -476,10 +519,11 @@ const deleteFont = async (req, res) => {
 
 router.post('/signup', signup);
 router.post('/login', login);
-router.post('/addProject', auth, newProject);
+router.post('/addProject', auth, addProject);
 router.post('/getProject', auth, getProject);
 router.post('/getAllProject', auth, getAllProjects);
 router.post('/renameProject', auth, renameProject);
+router.post('/deleteProject', auth, deleteProject);
 router.post('/addPage', auth, addPage);
 router.post('/getPage', auth, getPage);
 router.post('/updatePage', auth, updatePage);
@@ -488,6 +532,7 @@ router.post('/deletePage', auth, deletePage);
 router.post('/saveSection', auth, saveSection);
 router.post('/addButton', auth, addButton);
 router.post('/updateButton', auth, updateButton);
+router.post('/getButtonStyle', auth, getButtonStyle);
 router.post('/deleteButton', auth, deleteButton);
 router.post('/addColor', auth, addColor);
 router.post('/editColor', auth, editColor);
