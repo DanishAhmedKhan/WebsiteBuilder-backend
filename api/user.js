@@ -308,6 +308,7 @@ const saveSection = async (req, res) => {
 const addButton = async (req, res) => {
     const error = __.validate(req.body, {
         projectId: Joi.string().required(),
+        id: Joi.string().required(),
         name: Joi.string().required(),
         html: Joi.string().required(),
         style: Joi.string().required(),
@@ -321,8 +322,15 @@ const addButton = async (req, res) => {
     });
     if (error) return res.status(400).send(__.error(error.details[0].message));
 
+    let { buttons } = await Project.findOne({ _id: req.body.projectId }, 'buttons');
+    for (let i = 0; i < buttons.length; i++) {
+        if (buttons[i].name == req.body.name) {
+            res.status(400).send(__.error(`Button with the name ${req.body.name} alrady exist`));
+        }
+    }
+ 
     let button = {
-        id: __.generateId(20),
+        id: req.body.id,
         name: req.body.name,
         html: req.body.html,
         style: req.body.style,
@@ -332,14 +340,7 @@ const addButton = async (req, res) => {
     await Project.updateOne({ _id: req.body.projectId }, {
         $push: { buttons: button }
     });
-
-    let { buttonStyle } = await Project.findOne({ _id: req.body.projectId }, 'buttonStyle');
-    buttonStyle += req.body.style;
-
-    await Project.updateOne({ _id: req.body.projectId }, {
-        $set: { buttonStyle }
-    });
-
+    
     res.status(200).send(__.success(button));
 };
 
@@ -387,6 +388,19 @@ const getButtonStyle = async (req, res) => {
     }
 
     res.status(200).send(__.success(buttonStyle));
+};
+
+const getButtons = async (req, res) => {
+    const error = __.validate(req.body, {
+        projectId: Joi.string().required(),
+    });
+    if (error) return res.status(400).send(__.error(error.details[0].message));
+
+    const p = await Project.findOne({ _id: req.body.projectId }, 'buttons');
+    const buttons = p.buttons;
+    console.log(buttons);
+
+    res.status(200).send(__.success(buttons));
 };
 
 const deleteButton = async (req, res) => {
@@ -533,6 +547,7 @@ router.post('/saveSection', auth, saveSection);
 router.post('/addButton', auth, addButton);
 router.post('/updateButton', auth, updateButton);
 router.post('/getButtonStyle', auth, getButtonStyle);
+router.post('/getButtons', auth, getButtons);
 router.post('/deleteButton', auth, deleteButton);
 router.post('/addColor', auth, addColor);
 router.post('/editColor', auth, editColor);

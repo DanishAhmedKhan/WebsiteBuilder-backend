@@ -9,6 +9,7 @@ const buttonSchema = new Schema({
     html: String,
     style: String,
     description: String,
+    parentClass: String,
     property: [{
         _id: false,
         className: String,
