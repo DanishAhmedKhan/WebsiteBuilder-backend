@@ -420,18 +420,17 @@ const deleteButton = async (req, res) => {
 const addColor = async (req, res) => {
     const error = __.validate(req.body, {
         projectId: Joi.string().required(),
-        name: Joi.string().required(),
-        color: Joi.string().required(),
+        colorId: Joi.string().required(),
+        value: Joi.string().required(),
     });
     if (error) return res.status(400).send(__.error(error.details[0].message));
 
-    let color = await Project.findOne({ _id: req.body.projectId, 'colors.name': req.body.name }, '_id');
-    if (color) return res.status(400).send(__.error('Color with this name already esist'));
+    // let color = await Project.findOne({ _id: req.body.projectId, 'colors.name': req.body.name }, '_id');
+    // if (color) return res.status(400).send(__.error('Color with this name already esist'));
 
-    color = {
-        id: generateId(20),
-        name: req.body.name,
-        value: req.body.color
+    let color = {
+        id: req.body.colorId,
+        value: req.body.value,
     };
 
     await Project.updateOne({ _id: req.body.projectId }, {
@@ -441,28 +440,37 @@ const addColor = async (req, res) => {
     res.status(200).send(__.success(color));
 };
 
-const editColor = async (req, res) => {
+const updateColor = async (req, res) => {
     const error = __.validate(req.body, {
         projectId: Joi.string().required(),
         colorId: Joi.string().required(),
-        name: Joi.string().required(),
-        color: Joi.string().required(),
+        value: Joi.string().required(),
     });
     if (error) return res.status(400).send(__.error(error.details[0].message));
 
     await Project.updateOne({ _id: req.body.projectId, 'colors.id': req.body.colorId }, {
         $set: {
-            'colors.$.name': req.body.name,
-            'colors.$.value': req.body.color,
+            'colors.$.value': req.body.value,
         }
     });
 
     res.status(200).send(__.success('Color updated'));
 };
 
+const getAllColor = async (req, res) => {
+    const error = __.validate(req.body, {
+        projectId: Joi.string().required(),
+    });
+    if (error) return res.status(400).send(__.error(error.details[0].message));
+
+    const { colors } = await Project.findOne({ _id: req.body.projectId }, 'colors');
+
+    res.staus(200).send(__.success(colors));
+};
+
 const deleteColor = async (req, res) => {
     const error = __.validate(req.body, {
-        projectId: Joi.srring().required(),
+        projectId: Joi.string().required(),
         colorId: Joi.string().required(),
     });
     if (error) return res.status(400).send(__.error(error.details[0].message));
@@ -498,7 +506,7 @@ const addFont = async (req, res) => {
     res.status(200).send(__.success(font));
 };
 
-const editFont = async (req, res) => {
+const updateFont = async (req, res) => {
     const error = __.validate(req.body, {
         projectId: Joi.string().required(),
         fontId: Joi.string().required(),
@@ -517,6 +525,17 @@ const editFont = async (req, res) => {
     res.status(200).send(__.success('Font updated'));
 };
 
+const getAllFont = async (req, res) => {
+    const error = __.validate(req.body, {
+        projectId: Joi.string().required(),
+    });
+    if (error) return res.status(400).send(__.error(error.details[0].message));
+
+    const { fonts } = await Project.findOne({ _id: req.body.projectId }, 'fonts');
+
+    res.staus(200).send(__.success(fonts));
+};
+
 const deleteFont = async (req, res) => {
     const error = __.validate(req.body, {
         projectId: Joi.srring().required(),
@@ -533,27 +552,34 @@ const deleteFont = async (req, res) => {
 
 router.post('/signup', signup);
 router.post('/login', login);
+
 router.post('/addProject', auth, addProject);
 router.post('/getProject', auth, getProject);
 router.post('/getAllProject', auth, getAllProjects);
 router.post('/renameProject', auth, renameProject);
 router.post('/deleteProject', auth, deleteProject);
+
 router.post('/addPage', auth, addPage);
 router.post('/getPage', auth, getPage);
 router.post('/updatePage', auth, updatePage);
 router.post('/renamePage', auth, renamePage);
 router.post('/deletePage', auth, deletePage);
 router.post('/saveSection', auth, saveSection);
+
 router.post('/addButton', auth, addButton);
 router.post('/updateButton', auth, updateButton);
 router.post('/getButtonStyle', auth, getButtonStyle);
 router.post('/getButtons', auth, getButtons);
 router.post('/deleteButton', auth, deleteButton);
+
 router.post('/addColor', auth, addColor);
-router.post('/editColor', auth, editColor);
+router.post('/updateColor', auth, updateColor);
+router.post('/getAllColor', auth, getAllColor);
 router.post('/deleteColor', auth, deleteColor);
+
 router.post('/addFont', auth, addFont);
-router.post('/editFont', auth, editFont);
+router.post('/updateFont', auth, updateFont);
+router.post('/getAllFont', auth, getAllFont);
 router.post('/deleteFont', auth, deleteFont);
 
 module.exports = router;

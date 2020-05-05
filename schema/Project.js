@@ -48,6 +48,7 @@ const projectSchema = new Schema({
     }],
     fonts: [{
         _id: false,
+        id: String,
         name: String,
         value: String,
     }],

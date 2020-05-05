@@ -86,6 +86,7 @@ const addButton = async (req, res) => {
     const error = __.validate(req.body, {
         html: Joi.string().required(),
         style: Joi.string().required(),
+        parentClass: Joi.string().required(),
         property: Joi.array().items(
             Joi.object({
                 className: Joi.string().required(),
@@ -99,6 +100,7 @@ const addButton = async (req, res) => {
     let button = new Button({
         html: req.body.html,
         style: req.body.style,
+        parentClass: req.body.parentClass,
         property: req.body.property,
     });
     await button.save();
