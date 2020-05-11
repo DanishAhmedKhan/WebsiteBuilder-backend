@@ -1,6 +1,4 @@
 const mongoose = require('mongoose');
-const config = require('config');
-const jwt = require('jsonwebtoken')
 
 const Schema = mongoose.Schema;
 const ObjectId = Schema.ObjectId;
@@ -27,7 +25,7 @@ const projectSchema = new Schema({
             url: String,
         }],
     }],
-    buttons: [{
+    ctas: [{
         _id: false,
         id: String,
         name: String,

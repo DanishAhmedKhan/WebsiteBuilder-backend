@@ -1,11 +1,8 @@
 const mongoose = require('mongoose');
-const config = require('config');
-const jwt = require('jsonwebtoken')
 
 const Schema = mongoose.Schema;
-const ObjectId = Schema.ObjectId;
 
-const buttonSchema = new Schema({
+const ctaSchema = new Schema({
     html: String,
     style: String,
     description: String,
@@ -18,5 +15,5 @@ const buttonSchema = new Schema({
     }],
 });
 
-const Button = mongoose.model('Button', buttonSchema);
-module.exports = Button;
+const Cta = mongoose.model('Cta', ctaSchema);
+module.exports = Cta;

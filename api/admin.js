@@ -76,13 +76,13 @@ const updateLayoutCode = async (req, res) => {
     res.status(200).send(__.success('Code updated'));
 };
 
-const allButton = async (req, res) =>{
+const allCta = async (req, res) =>{
     const buttons = await Button.find();
 
     res.status(200).send(__.success(buttons));
 };
 
-const addButton = async (req, res) => {
+const addCta = async (req, res) => {
     const error = __.validate(req.body, {
         html: Joi.string().required(),
         style: Joi.string().required(),
@@ -108,7 +108,7 @@ const addButton = async (req, res) => {
     res.status(200).send(__.success(button));
 };  
 
-const updateButtonCode = async (req, res) => {
+const updateCtaCode = async (req, res) => {
     const error = __.validate(req,body, {
         buttonId: Joi.string().required(),
         html: Joi.string().required(),
@@ -131,9 +131,8 @@ router.post('/allLayout', allLayout);
 router.post('/addLayout', addLayout);
 router.post('/updateLayoutThumbnail', updateLayoutThumbnail);
 router.post('/updateLayoutCode', updateLayoutCode);
-router.post('/allButton', allButton);
-router.post('/addButton', addButton);
-router.post('/updateButtonCode', updateButtonCode);
-
+router.post('/allCta', allCta);
+router.post('/addCta', addCta);
+router.post('/updateCtaCode', updateCtaCode);
 
 module.exports = router;

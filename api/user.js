@@ -4,10 +4,12 @@ const Joi = require('joi');
 const auth = require('../middleware/auth');
 const User = require('../schema/User');
 const Project = require('../schema/Project');
-const Button = require('../schema/Button');
 const __ = require('./appUtil');
 
 const router = express.Router();
+
+const validString = Joi.string().required();
+
 
 const signup = async (req, res) => {
     const error = __.validate(req.body, {
@@ -55,6 +57,23 @@ const login = async (req, res) => {
        .send(__.success(authToken));
 };
 
+const forgotPassword = async (req, res) => {
+    const error = __.validate(req.body, {
+        email: validString,
+    });
+    if (error) return res.status(400).send(__.error(error.details[0].message));
+
+
+};
+
+const resetPassword = async (req, res) =>{
+    const error = __.validate(req.body, {
+        email: validString,
+        password: validString,
+    });
+    if (error) return res.status(400).send(__.error(error.details[0].message));
+}
+
 const addProject = async (req, res) => {
     const error = __.validate(req.body, {
         projectName: Joi.string().required(),
@@ -92,7 +111,7 @@ const getProject = async(req, res) => {
     res.status(200).send(__.success(project));
 };
 
-const getAllProjects = async (req, res) => {
+const getAllProjectMinimized = async (req, res) => {
     let projects = [];
 
     const user = await User.findOne({ _id: req.user._id }, 'projects');
@@ -107,18 +126,20 @@ const getAllProjects = async (req, res) => {
             let newPage = {
                 id: pages[j].id,
                 name: pages[j].name,
-            }
+            };
 
             newPages.push(newPage);
         }
 
-        let buttons = project.buttons || [];
-        let newButton = [];
-        for (let j = 0; j < buttons.length; j++) {
-            let newButton = {
+        let ctas = project.ctas || [];
+        let newCtas = [];
+        for (let j = 0; j < ctas.length; j++) {
+            let newCta = {
                 id: buttons[j].id,
                 name: buttons[j].name,
             }
+
+            newCtas.push(newCta);
         }
 
         let newProject = {
@@ -171,12 +192,20 @@ const deleteProject = async (req, res) => {
 const addPage = async (req, res) => {
     const error = __.validate(req.body, {
         projectId: Joi.string().required(),
+        pageId: Joi.string().required(),
         pageName: Joi.string().required(),
     });
     if (error) return res.status(400).send(__.error(error.details[0].message));
 
+    let { pages } = await Project.findOne({ _id: req.body.projectId }, 'pages');
+    for (let i = 0; i < pages.length; i++) {
+        if (pages[i].name == req.body.pageName) {
+            res.status(400).send(__.error(`Page with the name ${req.body.pageName} alrady exist`));
+        }
+    }
+
     let page = {
-        id: __.generateId(20),
+        id: req.body.pageId,
         name: req.body.pageName,
         sections: [],
         html: '',
@@ -184,10 +213,10 @@ const addPage = async (req, res) => {
     }
 
     await Project.updateOne({ _id: req.body.projectId }, {
-        $push: { pages: page }
+        $push: { pages: page },
     });
 
-    res.status(200).send(__.success(page));
+    res.status(200).send(__.success('Page added'));
 };
 
 const getPage = async (req, res) => {
@@ -197,12 +226,23 @@ const getPage = async (req, res) => {
     });
     if (error) return res.status(400).send(__.error(error.details[0].message));
 
-    const page = await Project.findOne({ 
+    const page = await Project.findOne({
         _id: req.body.projectId, 
         'pages.id': req.body.pageId,
     }, 'pages.$');
 
     res.status(200).send(__.success(page));
+};
+
+const getAllPage = async (req, res) => {
+    const error = __.validate(req.body, {
+        projectId: validString,
+    });
+    if (error) return res.status(400).send(__.error(error.details[0].message));
+
+    const { pages } = await Project.findOne({ _id: req.body.projectId }, 'pages');
+
+    res.status(200).send(__.success(pages));
 };
 
 const updatePage = async (req, res) => {
@@ -251,7 +291,7 @@ const renamePage = async (req, res) => {
         }
     });
 
-    res.status(200).send(__.success('Project renamed'));
+    res.status(200).send(__.success('Page renamed'));
 };
 
 const deletePage = async (req, res) => {
@@ -267,7 +307,7 @@ const deletePage = async (req, res) => {
         }
     });
 
-    res.status(200).send(__.success('Page seleated'));
+    res.status(200).send(__.success("page deleted"));
 };
 
 const saveSection = async (req, res) => {
@@ -305,14 +345,14 @@ const saveSection = async (req, res) => {
     res.status(200).send(__.success('Section added'));
 };
 
-const addButton = async (req, res) => {
+const addCta = async (req, res) => {
     const error = __.validate(req.body, {
         projectId: Joi.string().required(),
-        id: Joi.string().required(),
-        name: Joi.string().required(),
-        html: Joi.string().required(),
-        style: Joi.string().required(),
-        property: Joi.array().items(
+        ctaId: Joi.string().required(),
+        ctaName: Joi.string().required(),
+        ctaHtml: Joi.string().required(),
+        ctaStyle: Joi.string().required(),
+        ctaProperty: Joi.array().items(
             Joi.object({
                 className: Joi.string().required(),
                 name: Joi.string().required(),
@@ -322,36 +362,36 @@ const addButton = async (req, res) => {
     });
     if (error) return res.status(400).send(__.error(error.details[0].message));
 
-    let { buttons } = await Project.findOne({ _id: req.body.projectId }, 'buttons');
-    for (let i = 0; i < buttons.length; i++) {
-        if (buttons[i].name == req.body.name) {
-            res.status(400).send(__.error(`Button with the name ${req.body.name} alrady exist`));
+    let { ctas } = await Project.findOne({ _id: req.body.projectId }, 'ctas');
+    for (let i = 0; i < ctas.length; i++) {
+        if (ctas[i].name == req.body.ctaName) {
+            res.status(400).send(__.error(`Cta with the name ${req.body.ctaName} alrady exist`));
         }
     }
  
-    let button = {
-        id: req.body.id,
-        name: req.body.name,
-        html: req.body.html,
-        style: req.body.style,
-        property: req.body.property,
+    let cta = {
+        id: req.body.ctaId,
+        name: req.body.ctaName,
+        html: req.body.ctaHtml,
+        style: req.body.ctaStyle,
+        property: req.body.ctaProperty,
     };
 
     await Project.updateOne({ _id: req.body.projectId }, {
-        $push: { buttons: button }
+        $push: { ctas: cta }
     });
     
-    res.status(200).send(__.success(button));
+    res.status(200).send(__.success('Cta added'));
 };
 
-const updateButton = async (req, res) => {
+const updateCta = async (req, res) => {
     const error = __.validate(req.body, {
         projectId: Joi.string().required(),
-        buttonId: Joi.string().required(),
-        name: Joi.string().required(),
-        html: Joi.string().required(),
-        style: Joi.string().required(),
-        property: Joi.array().items(
+        ctaId: Joi.string().required(),
+        ctaName: Joi.string().required(),
+        ctaHtml: Joi.string().required(),
+        ctaStyle: Joi.string().required(),
+        ctaProperty: Joi.array().items(
             Joi.object({
                 className: Joi.string().required(),
                 name: Joi.string().required(),
@@ -361,98 +401,179 @@ const updateButton = async (req, res) => {
     });
     if (error) return res.status(400).send(__.error(error.details[0].message));
 
-    await Project.updateOne({ _id: req.body.projectId, 'buttons.id': req.body.buttonId }, {
+    let { ctas } = await Project.findOne({ _id: req.body.projectId }, 'ctas');
+    for (let i = 0; i < ctas.length; i++) {
+        if (ctas[i].name == req.body.ctaName) {
+            res.status(400).send(__.error(`Cta with the name ${req.body.ctaName} alrady exist`));
+        }
+    }
+
+    await Project.updateOne({ _id: req.body.projectId, 'ctas.id': req.body.ctaId }, {
         $set: {
-            'buttons.$.name': req.body.name,
-            'buttons.$.html': req.body.html,
-            'buttons.$.style': req.body.style,
-            'buttons.$.property': req.body.property,
+            'ctas.$.name': req.body.ctaName,
+            'ctas.$.html': req.body.ctaHtml,
+            'ctas.$.style': req.body.ctaStyle,
+            'ctas.$.property': req.body.ctaProperty,
         }
     });
 
-    res.status(200).send(__.success('Button updated'));
+    res.status(200).send(__.success('Cta updated'));
 };
 
-const getButtonStyle = async (req, res) => {
+const getCtaStyle = async (req, res) => {
     const error = __.validate(req.body, {
         projectId: Joi.string().required(),
     });
     if (error) return res.status(400).send(__.error(error.details[0].message));
 
-    let { buttons } = await Project.findOne({ _id: req.body.projectId }, 'buttons');
-    console.log(buttons);
+    let { ctas } = await Project.findOne({ _id: req.body.projectId }, 'ctas');
 
-    let buttonStyle = '.btndef { display: inline-block; cursor: pointer; background-color: #a1479f; padding: 10px 16px; }';
-    for (let i = 0; i < buttons.length; i++) {
-        buttonStyle += ' ' + buttons[i].style;
+    let ctaStyle = '.btndef { display: inline-block; cursor: pointer; background-color: #a1479f; padding: 10px 16px; }';
+    for (let i = 0; i < ctas.length; i++) {
+        ctaStyle += ' ' + ctas[i].style;
     }
 
-    res.status(200).send(__.success(buttonStyle));
+    res.status(200).send(__.success(ctasStyle));
 };
 
-const getButtons = async (req, res) => {
+const getCta = async (req, res) => {
     const error = __.validate(req.body, {
         projectId: Joi.string().required(),
+        ctaId: Joi.string().required(),
     });
     if (error) return res.status(400).send(__.error(error.details[0].message));
 
-    const p = await Project.findOne({ _id: req.body.projectId }, 'buttons');
-    const buttons = p.buttons;
-    console.log(buttons);
+    const cta = await Project.findOne({ 
+        _id: req.body.projectId, 
+        'ctas.id': req.body.ctaId 
+    }, 'ctas.$');
 
-    res.status(200).send(__.success(buttons));
+    res.status(200).send(__.success(cta));
 };
 
-const deleteButton = async (req, res) => {
+const getAllCta = async (req, res) => {
+    const error = __.validate(req.body, {
+        projectId: validString,
+    });
+    if (error) return res.status(400).send(__.error(error.details[0].message));
+
+    const { ctas } = await Project.findOne({ _id: req.body.projectId }, 'ctas');
+
+    res.status(200).send(__.success(ctas));
+};
+
+const deleteCta = async (req, res) => {
     const error = __.validate(req.body, {
         projectId: Joi.string().required(),
-        buttonId: Joi.string().required(),
+        ctaId: Joi.string().required(),
     });
     if (error) return res.status(400).send(__.error(error.details[0].message));
 
     await Project.updateOne({ _id: req.body.projectId }, {
-        $pull: { buttons: { id: req.body.buttonId } }
+        $pull: { ctas: { id: req.body.ctaId } }
     });
 
-    res.status(200).send(__.success('Button deleted'));
+    res.status(200).send(__.success('Cta deleted'));
 };
 
 const addColor = async (req, res) => {
     const error = __.validate(req.body, {
         projectId: Joi.string().required(),
         colorId: Joi.string().required(),
-        value: Joi.string().required(),
+        colorValue: Joi.string().required(),
     });
     if (error) return res.status(400).send(__.error(error.details[0].message));
 
-    // let color = await Project.findOne({ _id: req.body.projectId, 'colors.name': req.body.name }, '_id');
-    // if (color) return res.status(400).send(__.error('Color with this name already esist'));
-
+    // Form the color object
     let color = {
         id: req.body.colorId,
-        value: req.body.value,
+        value: req.body.colorValue,
     };
 
+    // Add the new color to the project
     await Project.updateOne({ _id: req.body.projectId }, {
         $push: { colors: color }
     });
 
-    res.status(200).send(__.success(color));
+    res.status(200).send(__.success('Color added'));
 };
 
 const updateColor = async (req, res) => {
     const error = __.validate(req.body, {
         projectId: Joi.string().required(),
         colorId: Joi.string().required(),
-        value: Joi.string().required(),
+        colorValue: Joi.string().required(),
     });
     if (error) return res.status(400).send(__.error(error.details[0].message));
 
-    await Project.updateOne({ _id: req.body.projectId, 'colors.id': req.body.colorId }, {
+    let projectId = req.body.projectId;
+    let colorId = req.body.colorId;
+    let newColor = req.body.colorValue;
+
+    // Update the project with the new project 
+    // And return the pages and colors
+    let {pages, ctas, colors} = await Project.findOneAndUpdate({ 
+        _id: projectId, 
+        'colors.id': colorId 
+    }, {
         $set: {
-            'colors.$.value': req.body.value,
+            'colors.$.value': newColor,
+        }
+    }, {
+        fields: {
+            pages: 1, 
+            ctas: 1,
+            colors: 1,
         }
     });
+
+    console.log(pages);
+    console.log(ctas);
+    console.log(colors);
+
+    // Get the old color
+    let oldColor;
+    for (let i = 0; i < colors.length; i++) {
+        if (colors[i].id == colorId) {
+            oldColor = colors[i].value;
+            break;
+        }
+    }
+
+    let oldColorFontTag = `<font color="${oldColor}">`;
+    let newColorFontTag = `<font color="${newColor}">`;
+
+    // Update each page html reflecting the new color change
+    for (let i = 0; i < pages.length; i++) {
+        let page = pages[i];
+        let html = page.html;
+        html.replace(oldColorFontTag, newColorFontTag);
+
+        // Update the page html
+        await Project.updateOne({ _id: projectId, 'pages.id': page.id }, {
+            $set: {
+                'pages.$.html': html,
+            }
+        });
+    }
+
+    // Update button property w
+    for (let i = 0; i < ctas.length; i++) {
+        let cta = ctas[i];
+        let property = cta.property;
+        for (let j = 0; j < property.length; j++) {
+            if (property[j].value.indexOf(oldColor) >= 0) {
+                property[j].value.replace(oldColor, newColor);
+            }
+        }
+
+        // Update the button property
+        await Project.updateOne({ _id: projectId, 'ctas.id': cta.id }, {
+            $set: {
+                'ctas.$.property': property,
+            }
+        });
+    }
 
     res.status(200).send(__.success('Color updated'));
 };
@@ -465,7 +586,22 @@ const getAllColor = async (req, res) => {
 
     const { colors } = await Project.findOne({ _id: req.body.projectId }, 'colors');
 
-    res.staus(200).send(__.success(colors));
+    res.status(200).send(__.success(colors));
+};
+
+const getColor = async (req, res) => {
+    const error = __.validate(req.body, {
+        projectId: validString,
+        colorId: validString,
+    });
+    if (error) return res.status(400).send(__.error(error.details[0].message));
+
+    const color = await Project.findOne({ 
+        _id: req.body.projectId, 
+        'colors.id': req.body.colorId 
+    }, 'colors.$');
+
+    res.status(200).send(__.success(color));
 };
 
 const deleteColor = async (req, res) => {
@@ -476,7 +612,9 @@ const deleteColor = async (req, res) => {
     if (error) return res.status(400).send(__.error(error.details[0].message));
 
     await Project.updateOne({ _id: req.body.projectId }, {
-        $pull: { colors: { id: req.body.colorId } }
+        $pull: { 
+            colors: { id: req.body.colorId } 
+        }
     });
 
     return res.status(200).send(__.success('Color deleted'));
@@ -485,40 +623,51 @@ const deleteColor = async (req, res) => {
 const addFont = async (req, res) => {
     const error = __.validate(req.body, {
         projectId: Joi.string().required(),
-        name: Joi.string().required(),
-        font: Joi.string().required(),
+        fontId: Joi.string().required(),
+        fontValue: Joi.string().required(),
     });
     if (error) return res.status(400).send(__.error(error.details[0].message));
 
-    let font = await Project.findOne({ _id: req.body.projectId, 'fonts.name': req.body.name }, '_id');
-    if (font) return res.status(400).send(__.error('Font with this name already esist'));
-
-    font = {
-        id: generateId(20),
-        name: req.body.name,
-        value: req.body.font
+    // The font object
+    let font = {
+        id: req.body.fontId,
+        value: req.body.fontValue,
     };
 
+    // Add the new font to the project
     await Project.updateOne({ _id: req.body.projectId }, {
         $push: { fonts: font }
     });
 
-    res.status(200).send(__.success(font));
+    res.status(200).send(__.success('Font added'));
 };
 
 const updateFont = async (req, res) => {
     const error = __.validate(req.body, {
         projectId: Joi.string().required(),
         fontId: Joi.string().required(),
-        name: Joi.string().required(),
-        font: Joi.string().required(),
+        fontValue: Joi.string().required(),
     });
     if (error) return res.status(400).send(__.error(error.details[0].message));
 
-    await Project.updateOne({ _id: req.body.projectId, 'fonts.id': req.body.fontId }, {
+    let projectId = req.body.projectId;
+    let fontId = req.body.fontId;
+    let newFont = req.body.fontValue;
+
+    // Update the project with the new project 
+    // And return the pages and colors
+    let {pages, ctas, colors} = await Project.findOneAndUpdate({ 
+        _id: projectId, 
+        'fonts.id': colorId 
+    }, {
         $set: {
-            'fonts.$.name': req.body.name,
-            'fonst.$.value': req.body.font,
+            'fonts.$.value': newFont,
+        }
+    }, {
+        fields: {
+            pages: 1, 
+            ctas: 1,
+            colors: 1,
         }
     });
 
@@ -533,7 +682,22 @@ const getAllFont = async (req, res) => {
 
     const { fonts } = await Project.findOne({ _id: req.body.projectId }, 'fonts');
 
-    res.staus(200).send(__.success(fonts));
+    res.status(200).send(__.success(fonts));
+};
+
+const getFont = async (req, res) => {
+    const error = __.validate(req.body, {
+        projectId: validString,
+        fontId: validString,
+    });
+    if (error) return res.status(400).send(__.error(error.details[0].message));
+
+    const font = await Project.findOne({ 
+        _id: req.body.projectId, 
+        'fonts.id': req.body.fontId 
+    }, 'fonts.$');
+
+    res.status(200).send(__.success(font));
 };
 
 const deleteFont = async (req, res) => {
@@ -544,7 +708,7 @@ const deleteFont = async (req, res) => {
     if (error) return res.status(400).send(__.error(error.details[0].message));
 
     await Project.updateOne({ _id: req.body.projectId }, {
-        $pull: { fonts: { id: req.body.colorId } }
+        $pull: { fonts: { id: req.body.fontId } }
     });
 
     return res.status(200).send(__.success('Font deleted'));
@@ -552,6 +716,8 @@ const deleteFont = async (req, res) => {
 
 router.post('/signup', signup);
 router.post('/login', login);
+router.post('/forgotPassword', forgotPassword);
+router.post('/resetPassword', resetPassword);
 
 router.post('/addProject', auth, addProject);
 router.post('/getProject', auth, getProject);
@@ -566,20 +732,22 @@ router.post('/renamePage', auth, renamePage);
 router.post('/deletePage', auth, deletePage);
 router.post('/saveSection', auth, saveSection);
 
-router.post('/addButton', auth, addButton);
-router.post('/updateButton', auth, updateButton);
-router.post('/getButtonStyle', auth, getButtonStyle);
-router.post('/getButtons', auth, getButtons);
-router.post('/deleteButton', auth, deleteButton);
+router.post('/addCta', auth, addCta);
+router.post('/updateCta', auth, updateCta);
+router.post('/getCtaStyle', auth, getCtaStyle);
+router.post('/getCta', auth, getCta);
+router.post('/deleteCta', auth, deleteCta);
 
 router.post('/addColor', auth, addColor);
 router.post('/updateColor', auth, updateColor);
 router.post('/getAllColor', auth, getAllColor);
+router.post('/getColor', auth, getColor)
 router.post('/deleteColor', auth, deleteColor);
 
 router.post('/addFont', auth, addFont);
 router.post('/updateFont', auth, updateFont);
 router.post('/getAllFont', auth, getAllFont);
+router.post('/getFont', auth, getFont);
 router.post('/deleteFont', auth, deleteFont);
 
 module.exports = router;
